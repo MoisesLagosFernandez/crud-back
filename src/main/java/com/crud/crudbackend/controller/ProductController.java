@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.http.HttpResponse;
 import java.util.List;
 
 @RestController
@@ -40,7 +41,7 @@ public class ProductController {
         Product product = poductService.findByNombre(nombre).get();
         return new ResponseEntity(product, HttpStatus.OK);
     }
-    @GetMapping("/create")
+    @PostMapping("/create")
     public ResponseEntity<?> create(@RequestBody ProductDTO productDTO){
         if(StringUtils.isBlank(productDTO.getNombre()))
             return new ResponseEntity(new Message("El nombre es obligatorio"), HttpStatus.BAD_REQUEST);
@@ -52,5 +53,32 @@ public class ProductController {
         Product product = new Product(productDTO.getNombre(), productDTO.getPrecio());
         poductService.save(product);
         return new ResponseEntity(new Message("Producto creado"), HttpStatus.OK);
+    }
+
+    @PutMapping("/update/{id}")
+    public ResponseEntity<?> update(@PathVariable("id") int id, @RequestBody ProductDTO productDTO){
+        if (!poductService.existsById(id))
+            return new ResponseEntity(new Message("Producto No existe"), HttpStatus.NOT_FOUND);
+        if(poductService.existsByNombre(productDTO.getNombre()) && poductService.findByNombre(productDTO.getNombre()).get().getId() != id)
+            return new ResponseEntity(new Message("El nombre ya existe"), HttpStatus.BAD_REQUEST);
+        if(StringUtils.isBlank(productDTO.getNombre()))
+            return new ResponseEntity(new Message("El nombre es obligatorio"), HttpStatus.BAD_REQUEST);
+        if(productDTO.getPrecio()<0)
+            return new ResponseEntity(new Message("El precio debe ser mayor a 'O'"), HttpStatus.BAD_REQUEST);
+
+
+        Product product = poductService.getOne(id).get();
+        product.setNombre(productDTO.getNombre());
+        product.setPrecio(productDTO.getPrecio());
+        poductService.save(product);
+        return new ResponseEntity(new Message("Producto Actualizado"), HttpStatus.OK);
+
+    }
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<?> delete(@PathVariable("id") int id){
+        if (!poductService.existsById(id))
+            return new ResponseEntity(new Message("Producto No existe"), HttpStatus.NOT_FOUND);
+        poductService.delete(id);
+        return new ResponseEntity(new Message("Producto eliminidado"), HttpStatus.OK);
     }
 }
